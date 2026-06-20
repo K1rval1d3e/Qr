@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Камера</title>
+    <style>
+        body { background: #1a1a2e; color: white; font-family: Arial; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; padding: 20px; }
+        video { width: 100%; max-width: 500px; border-radius: 12px; background: #000; }
+        button { padding: 16px 40px; font-size: 20px; border: none; border-radius: 50px; background: #e94560; color: white; margin-top: 15px; cursor: pointer; }
+        button:disabled { opacity: 0.5; }
+        img { max-width: 100%; max-height: 300px; margin-top: 15px; border-radius: 12px; display: none; }
+        #status { margin-top: 15px; padding: 10px; background: #0f3460; border-radius: 10px; min-height: 40px; text-align: center; }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline></video>
+    <button id="startBtn">📷 Включить камеру</button>
+    <button id="captureBtn" disabled>📸 Снять фото</button>
+    <img id="preview">
+    <div id="status">Нажмите "Включить камеру"</div>
+
+    <script>
+        const video = document.getElementById('video');
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        let stream = null;
+
+        startBtn.onclick = async function() {
+            try {
+                status.textContent = '⏳ Запрашиваю камеру...';
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                await video.play();
+                startBtn.disabled = true;
+                captureBtn.disabled = false;
+                status.textContent = '✅ Камера работает! Снимайте фото.';
+            } catch (err) {
+                status.textContent = '❌ Ошибка: ' + err.message;
+                console.error(err);
+            }
+        };
+
+        captureBtn.onclick = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 1280;
+            canvas.height = video.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            preview.src = canvas.toDataURL('image/jpeg', 0.9);
+            preview.style.display = 'block';
+            status.textContent = '✅ Фото готово!';
+        };
+    </script>
+</body>
+</html>
