@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Сам себе фотограф</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: rgb(155, 169, 152);
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            background-color: rgb(244, 241, 234);
+            width: 100%;
+            min-height: 100vh;
+            padding: 40px 25px 40px 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgb(155, 169, 152);
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,30 C300,0 600,60 900,30 C1050,15 1150,20 1200,30 L1200,0 L0,0 Z' fill='black'/%3E%3C/svg%3E");
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,30 C300,0 600,60 900,30 C1050,15 1150,20 1200,30 L1200,0 L0,0 Z' fill='black'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            -webkit-mask-size: 100% 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .container::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgb(155, 169, 152);
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,30 C300,60 600,0 900,30 C1050,45 1150,40 1200,30 L1200,60 L0,60 Z' fill='black'/%3E%3C/svg%3E");
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,30 C300,60 600,0 900,30 C1050,45 1150,40 1200,30 L1200,60 L0,60 Z' fill='black'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            -webkit-mask-size: 100% 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 30px;
+            background: #000;
+            display: block;
+            border: 4px solid #d4d0c7;
+            margin: 0 auto;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        #flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.05s ease;
+        }
+
+        #flash.active {
+            opacity: 1;
+            transition: opacity 0s;
+        }
+
+        .btn-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 400px;
+            height: 90px;
+        }
+
+        .btn-group button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-group button:active {
+            transform: translateY(-50%) scale(0.88);
+        }
+
+        #captureBtn {
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #captureBtn:active {
+            transform: translate(-50%, -50%) scale(0.88);
+        }
+
+        #captureBtn img {
+            display: block;
+            width: 85px;
+            height: 85px;
+            object-fit: contain;
+        }
+
+        #flashBtn {
+            left: 20px;
+        }
+
+        #flashBtn:active {
+            transform: translateY(-50%) scale(0.88);
+        }
+
+        #flashBtn img {
+            display: block;
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        #flashBtn.flash-on {
+            filter: drop-shadow(0 0 10px #ffdd00);
+        }
+
+        #flipBtn {
+            right: 20px;
+        }
+
+        #flipBtn:active {
+            transform: translateY(-50%) scale(0.88);
+        }
+
+        #flipBtn img {
+            display: block;
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        #captureBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #captureBtn:disabled:active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 40px;
+            background: #e3dfd6;
+            color: #2e2e2b;
+            font-size: 15px;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            width: 100%;
+            max-width: 500px;
+            border: 2px solid #d4d0c7;
+        }
+        .status.success {
+            background: #b5d3b0;
+            border-color: #6f9e7a;
+        }
+        .status.error {
+            background: #e8b4b4;
+            border-color: #b95a5a;
+        }
+        .status.uploading {
+            background: #f0e3a0;
+            border-color: #c4b05a;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 3px solid #4a4a42;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== СЧЁТЧИК ФОТО ===== */
+        .photo-counter {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #5a5a52;
+            background: #eae6db;
+            padding: 6px 18px;
+            border-radius: 30px;
+            border: 2px solid #d4d0c7;
+            display: inline-block;
+        }
+
+        @media (max-width: 480px) {
+            .btn-group {
+                height: 80px;
+            }
+            #flashBtn img {
+                width: 50px;
+                height: 50px;
+            }
+            #captureBtn img {
+                width: 75px;
+                height: 75px;
+            }
+            #flipBtn img {
+                width: 50px;
+                height: 50px;
+            }
+            #flashBtn {
+                left: 10px;
+            }
+            #flipBtn {
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="flash"></div>
+
+    <div class="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+
+        <div class="btn-group">
+            <button id="flashBtn">
+                <img src="vsp.png" alt="Вспышка">
+            </button>
+            <button id="captureBtn" disabled>
+                <img src="photo.png" alt="Снять фото">
+            </button>
+            <button id="flipBtn">
+                <img src="rev.png" alt="Повернуть камеру">
+            </button>
+        </div>
+
+        <div class="status" id="status">Запрос доступа к камере...</div>
+        <div class="photo-counter" id="counter">Снято: 0</div>
+    </div>
+
+    <script>
+        // ===== ТОКЕН ЯНДЕКСА =====
+        const YANDEX_TOKEN = 'y0__wgBEOaiqocEGIaDRCC65ouBGKVK9s5CugOnW1S7crszWXyaxPkx';
+
+        // ===== ЭЛЕМЕНТЫ =====
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const flipBtn = document.getElementById('flipBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const statusDiv = document.getElementById('status');
+        const flash = document.getElementById('flash');
+        const counterDiv = document.getElementById('counter');
+
+        let stream = null;
+        let currentFacingMode = 'environment';
+        let flashEnabled = false;
+        let flashTrack = null;
+        let photoCount = 0;
+
+        // ===== 1. ЗАПУСК КАМЕРЫ =====
+        async function startCamera(facingMode = 'environment') {
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                    flashTrack = null;
+                }
+
+                statusDiv.textContent = 'Запрашиваю доступ к камере...';
+                statusDiv.className = 'status';
+
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: facingMode },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                await video.play();
+
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+
+                canvas.width = settings.width || 1920;
+                canvas.height = settings.height || 1080;
+
+                flashTrack = track;
+
+                if (facingMode === 'user') {
+                    video.style.transform = 'scaleX(-1)';
+                } else {
+                    video.style.transform = 'scaleX(1)';
+                }
+
+                captureBtn.disabled = false;
+                statusDiv.textContent = 'Камера работает. Нажмите кнопку для съёмки.';
+                statusDiv.className = 'status success';
+
+                if (flashEnabled) {
+                    applyFlash(flashEnabled);
+                }
+
+            } catch (err) {
+                console.error('Ошибка доступа к камере:', err);
+                let msg = 'Не удалось получить доступ к камере: ';
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    msg += 'пользователь запретил доступ.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    msg += 'камера не найдена на устройстве.';
+                } else {
+                    msg += err.message;
+                }
+                statusDiv.textContent = msg;
+                statusDiv.className = 'status error';
+                captureBtn.disabled = true;
+            }
+        }
+
+        // ===== 2. УПРАВЛЕНИЕ ВСПЫШКОЙ =====
+        async function applyFlash(enabled) {
+            try {
+                if (!flashTrack) return;
+
+                const capabilities = flashTrack.getCapabilities();
+
+                if (!capabilities.torch) {
+                    console.log('LED-вспышка не поддерживается, используем только экранную');
+                    if (enabled) {
+                        flashBtn.classList.add('flash-on');
+                    } else {
+                        flashBtn.classList.remove('flash-on');
+                    }
+                    return;
+                }
+
+                await flashTrack.applyConstraints({
+                    advanced: [{ torch: enabled }]
+                });
+
+                if (enabled) {
+                    flashBtn.classList.add('flash-on');
+                } else {
+                    flashBtn.classList.remove('flash-on');
+                }
+
+            } catch (err) {
+                console.error('Ошибка управления вспышкой:', err);
+                flashEnabled = false;
+                flashBtn.classList.remove('flash-on');
+            }
+        }
+
+        // ===== 3. ПЕРЕКЛЮЧЕНИЕ ВСПЫШКИ =====
+        function toggleFlash() {
+            flashEnabled = !flashEnabled;
+            applyFlash(flashEnabled);
+        }
+
+        // ===== 4. ПЕРЕКЛЮЧЕНИЕ КАМЕРЫ =====
+        function flipCamera() {
+            if (flashEnabled) {
+                flashEnabled = false;
+                flashBtn.classList.remove('flash-on');
+            }
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            startCamera(currentFacingMode);
+            statusDiv.textContent = 'Переключение камеры...';
+            statusDiv.className = 'status';
+        }
+
+        // ===== 5. ЭКРАННАЯ ВСПЫШКА =====
+        function triggerScreenFlash() {
+            flash.classList.add('active');
+            setTimeout(() => {
+                flash.classList.remove('active');
+            }, 1000);
+        }
+
+        // ===== 6. ЗАХВАТ ФОТО (БЕЗ ОЖИДАНИЯ ЗАГРУЗКИ) =====
+        function capturePhoto() {
+            if (!stream || !video.videoWidth) {
+                statusDiv.textContent = 'Камера ещё не готова. Подождите...';
+                statusDiv.className = 'status error';
+                return;
+            }
+
+            // ВСПЫШКА
+            triggerScreenFlash();
+
+            const context = canvas.getContext('2d');
+
+            if (currentFacingMode === 'user') {
+                context.save();
+                context.scale(-1, 1);
+                context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+                context.restore();
+            } else {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            }
+
+            const photoDataURL = canvas.toDataURL('image/jpeg', 1.0);
+
+            // Увеличиваем счётчик
+            photoCount++;
+            counterDiv.textContent = `Снято: ${photoCount}`;
+
+            // Показываем статус "Фото сделано!"
+            statusDiv.textContent = `Фото ${photoCount} сделано! Загружаю...`;
+            statusDiv.className = 'status success';
+
+            if (navigator.vibrate) navigator.vibrate(30);
+
+            // ЗАГРУЗКА В ФОНОВОМ РЕЖИМЕ (НЕ БЛОКИРУЕТ ИНТЕРФЕЙС)
+            uploadPhotoToYandex(photoDataURL, photoCount);
+        }
+
+        // ===== 7. ЗАГРУЗКА НА ЯНДЕКС ДИСК (АСИНХРОННАЯ) =====
+        async function uploadPhotoToYandex(dataURL, photoNumber) {
+            try {
+                const blob = await (await fetch(dataURL)).blob();
+                const fileName = `photo_${Date.now()}.jpg`;
+                const remotePath = `disk:/${fileName}`;
+
+                const url =
+                    `https://cloud-api.yandex.net/v1/disk/resources/upload?path=${encodeURIComponent(remotePath)}&overwrite=true`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `OAuth ${YANDEX_TOKEN}` }
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(`API ошибка: ${errData.message || response.status}`);
+                }
+
+                const data = await response.json();
+                const uploadUrl = data.href;
+
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: blob,
+                    headers: { 'Content-Type': 'image/jpeg' }
+                });
+
+                if (uploadResponse.ok) {
+                    // Показываем, что фото загружено, но не сбрасываем статус, если уже новое фото
+                    statusDiv.textContent = `✅ Фото ${photoNumber} загружено как ${fileName}`;
+                    statusDiv.className = 'status success';
+                    // Через 2 секунды возвращаем стандартное сообщение, если не было новых фото
+                    setTimeout(() => {
+                        if (statusDiv.textContent.includes(`Фото ${photoNumber} загружено`)) {
+                            statusDiv.textContent = 'Камера работает. Нажмите кнопку для съёмки.';
+                            statusDiv.className = 'status success';
+                        }
+                    }, 3000);
+                } else {
+                    throw new Error(`Ошибка загрузки: ${uploadResponse.status}`);
+                }
+
+            } catch (error) {
+                console.error('Ошибка загрузки фото', photoNumber, ':', error);
+                statusDiv.textContent = `❌ Ошибка фото ${photoNumber}: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        // ===== 8. ОСТАНОВКА КАМЕРЫ =====
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                flashTrack = null;
+                video.srcObject = null;
+            }
+        }
+
+        // ===== СОБЫТИЯ =====
+        captureBtn.addEventListener('click', capturePhoto);
+        flipBtn.addEventListener('click', flipCamera);
+        flashBtn.addEventListener('click', toggleFlash);
+        window.addEventListener('beforeunload', stopCamera);
+
+        startCamera('environment');
+    </script>
+
+</body>
+</html>
